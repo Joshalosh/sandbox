@@ -1,0 +1,12 @@
+@echo off
+
+set CommonCompilerFlags= -MT -nologo -Gm- -GR- -EHa- -Od -Oi -WX -W4 -FC -Z7
+set CommonLinkerFlags= -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib
+
+IF NOT EXIST ..\build mkdir ..\build
+pushd ..\build 
+
+del *.pdb > NUL 2> NUL
+cl %CommonCompilerFlags% ..\code\sandbox.cpp -Fmgame.map -LD /link -incremental:no -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
+cl %CommonCompilerFlags% ..\code\win32_platform.cpp -Fmwin_32.map /link %CommonLinkerFlags%
+popd
