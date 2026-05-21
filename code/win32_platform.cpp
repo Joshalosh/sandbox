@@ -14,7 +14,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                                      WS_OVERLAPPEDWINDOW|WS_VISIBLE, CW_USEDEFAULT,
                                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                      0, 0, instance, 0);
+        if (window) {
+            HDC device_context = GetDC(window);
+        } else {
+            // Error Logging
+        }
+    } else {
+        // Error logging
     }
-
 }
 
