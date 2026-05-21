@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "staples.h"
+#include "sandbox.h"
 
 GLOBAL bool         g_running;
 GLOBAL Win32_Bitmap g_bitmap;
@@ -57,6 +58,30 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                                      0, 0, instance, 0);
         if (window) {
             HDC device_context = GetDC(window);
+
+            while (g_running) {
+                MSG message;
+                while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+                    if (message.message == WM_QUIT) {
+                        g_running = false;
+                    }
+
+                    TranslateMessage(&message);
+                    DispatchMessageA(&message);
+                }
+
+                /*
+                Game_Bitmap bitmap = {};
+                bitmap.memory          = g_bitmap.memory;
+                bitmap.width           = g_bitmap.width;
+                bitmap.height          = g_bitmap.height;
+                bitmap.pitch           = g_bitmap.pitch;
+                bitmap.bytes_per_pixel = g_bitmap.bytes_per_pixel;
+                */
+
+                Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
+                Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
+            }
         } else {
             // Error Logging
         }

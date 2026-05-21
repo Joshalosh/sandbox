@@ -1,4 +1,6 @@
 
+#include <stdint.h>
+
 #define GLOBAL        static // Explicit for global variables
 #define LOCAL_PERSIST static // Explicit for locally persisting variables
 #define INTERNAL      static // Explicit for functions internal to the translation unit
@@ -37,5 +39,3 @@ INTERNAL U32 SafeU64ToU32(U64 input) {
     U32 result = (U32)input;
     return result;
 }
-
-
