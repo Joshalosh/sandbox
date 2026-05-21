@@ -2,6 +2,38 @@
 #include <windows.h>
 #include <stdio.h>
 
+#include "staples.h"
+
+GLOBAL bool g_running;
+
+INTERNAL Win32_Window_Dimension Win32GetWindowDimension(HWND window) {
+    Win32_Window_Dimension result;
+    ASSERT(window);
+    result.width = window.width;
+    result.height = window.height;
+    return result;
+}
+
+LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
+    LRESULT result = 0;
+    switch (message) {
+        case WM_SIZE: {
+        } break;
+        case WM_DESTROY:     g_running = false;                      break;
+        case WM_CLOSE:       g_running = false;                      break;
+        case WM_ACTIVATEAPP: OutputDebugStringA("WM_ACTIVATEAPP\n"); break;
+        case WM_PAINT: {
+            PAINTSTRUCT paint;
+            HDC device_context = BeginPaint(window, &paint);
+            Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
+            Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
+            EndPaint(window, &paint);
+        } break;
+        default: result = DefWindowProc(window, message, w_param, l_param); break;
+    }
+    return result;
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
