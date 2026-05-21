@@ -4,14 +4,23 @@
 
 #include "staples.h"
 
-GLOBAL bool g_running;
+GLOBAL bool         g_running;
+GLOBAL Win32_Bitmap g_bitmap;
 
 INTERNAL Win32_Window_Dimension Win32GetWindowDimension(HWND window) {
     Win32_Window_Dimension result;
+    RECT client_rect;
     ASSERT(window);
-    result.width = window.width;
-    result.height = window.height;
+    GetClientRect(window, &client_rect);
+    result.width = client_rect.right - client_rect.left;
+    result.height = client_rect.bottom - client_rect.top;
     return result;
+}
+
+INTERNAL void Win32CopyBitmapToWindow(HDC device_context, Win32_Bitmap bitmap,
+                                      int window_width, int window_height) {
+    StretchDIBits(device_context, 0, 0, window_width, window_height, 0, 0, bitmap.width, bitmap.height,
+                  bitmap.memory, &bitmap.info, DIB_RGB_COLORS, SRCCOPY); 
 }
 
 LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM w_param, LPARAM l_param) {
