@@ -44,6 +44,34 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM w_par
     return result;
 }
 
+INTERNAL Win32ResizeDIBSection(Win32_Bitmap *bitmap, int width, int height) {
+    // Win32 takes LONG for its width and height which is int32 
+    // just to make operations easy I should keep things in this functions to 
+    // S32 so everything plays nice with the required ints for the API
+    S32 bytes_per_pixel = 4;
+    S32 bitmap_memory_size = width * height * bytes_per_pixel;
+    void *new_memory = VirtualAlloc(0, bitmap_memory_size, MEM_COMMIT, PAGE_READWRITE);
+    if (new_memory) {
+        if (bitmap->memory) {
+            VirtualFree(bitmap->memory, 0, MEM_RELEASE);
+        }
+
+        bitmap->width = width;
+        bitmap->height = height;
+        bitmap->bytes_per_pixel = bytes_per_pixel;
+
+        bitmap->info.bmiHeader.biSize = sizeof(bitmap->info.bmiHeader);
+        bitmap->info.bmiHeader.biWidth = bitmap->width;
+        bitmap->info.bmiHeader.biHeight = -bitmap->height;
+        bitmap->info.bmiHeader.biPlanes = 1;
+        bitmap->info.bmiHeader.biBitCount = 32;
+        bitmap->info.bmiHeader.biCompression = BI_RGB;
+
+        bitmap->memory = new_memory;
+        bitmap->pitch = bitmap->width * bitmap->bytes_per_pixel;
+    }
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
