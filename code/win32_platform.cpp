@@ -79,6 +79,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
     window_class.hInstance     = instance;
     window_class.lpszClassName = "SandboxWindowClass";
 
+    Win32ResizeDIBSection(&g_bitmap, 1280, 720
+
     if (RegisterClass(&window_class)) {
         HWND window = CreateWindowEx(0, window_class.lpszClassName, "Sandbox",
                                      WS_OVERLAPPEDWINDOW|WS_VISIBLE, CW_USEDEFAULT,
@@ -98,14 +100,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                     DispatchMessageA(&message);
                 }
 
-                /*
+                
                 Game_Bitmap bitmap = {};
                 bitmap.memory          = g_bitmap.memory;
                 bitmap.width           = g_bitmap.width;
                 bitmap.height          = g_bitmap.height;
                 bitmap.pitch           = g_bitmap.pitch;
                 bitmap.bytes_per_pixel = g_bitmap.bytes_per_pixel;
-                */
 
                 Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
                 Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);

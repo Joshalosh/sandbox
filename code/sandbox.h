@@ -11,3 +11,6 @@ struct Game_Bitmap {
     int   pitch;
     int   bytes_per_pixel;
 };
+
+#define GAME_UPDATE_AND_RENDER(name) void name(Game_Memory *memory, Game_Bitmap *bitmap)
+typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render)
