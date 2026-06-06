@@ -137,6 +137,43 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile) {
     return result;
 }
 
+INTERNAL FILETIME Win32GetLastWriteTime(char *filename) {
+    FILETIME last_write_time = {};
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExA(filename, GetFileExInfoStandard, &data)) {
+        last_write_time = data.ftLastWriteTime;
+    }
+    return last_write_time;
+}
+
+INTERNAL Win32_Game_Code Win32LoadGameCode(char *source_dll_path, char *temp_dll_path) {
+    Win32_Game_Code result = {};
+    result.last_dll_write_time = Win32GetLastWriteTime(source_dll_path);
+    if (CopyFile(source_dll_path, temp_dll_path, FALSE)) {
+        result.game_code_dll = LoadLibraryA(temp_dll_path);
+        if (result.game_code_dll) {
+            result.update_and_render = (Game_Update_And_Render *)
+                                       GetProcAddress(result.game_code_dll, "GameUpdateAndRender");
+            result.is_valid = (result.update_and_render != 0);
+        }
+    } else {
+        // TODO: Log the copy failed
+    }
+    if (!result.is_valid) {
+        result.update_and_render = 0;
+    }
+    return result;
+}
+
+INTERNAL void Win32UnloadGameCode(Win32_Game_Code *game_code) {
+    if (game_code->game_code_dll) {
+        FreeLibrary(game_code->game_code_dll);
+        game_code->game_code_dll = 0;
+    }
+    game_code->is_valid = false;
+    game_code->update_and_render = 0;
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
