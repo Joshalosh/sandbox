@@ -203,26 +203,60 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
             game_memory.DEBUGPlatformReadEntireFile  = DEBUGplatformReadEntireFile;
             game_memory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
 
-            while (g_running) {
-                MSG message;
-                while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
-                    if (message.message == WM_QUIT) {
-                        g_running = false;
-                    }
+            U64 total_memory_size = game_memory.persisting_storage_size + 
+                                    game_memory.temporary_storage_size;
+            game_memory.persisting_storage = VirtualAlloc(base_address, total_memory_size,
+                                                          MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+            game_memory.temporary_storage = (U8 *)game_memory.persisting_storage + 
+                                                  game_memory.persisting_storage_size;
+            if (game_memory.persisting_storage && game_memory.temporary_storage) {
+                g_running = true;
 
-                    TranslateMessage(&message);
-                    DispatchMessageA(&message);
+                char exe_filename[MAX_PATH]; // Max path is a little big dodgey
+                DWORD size_of_filename = GetModuleFileNameA(0, exe_filename, sizeof(exe_filename));
+                if (size_of_filename == 0 || size_of_filename == sizeof(exe_filename)) {
+                    // TODO: Log that the executable couldnt be found or path was too long
+                    return 0;
                 }
-                
-                Game_Bitmap bitmap = {};
-                bitmap.memory          = g_bitmap.memory;
-                bitmap.width           = g_bitmap.width;
-                bitmap.height          = g_bitmap.height;
-                bitmap.pitch           = g_bitmap.pitch;
-                bitmap.bytes_per_pixel = g_bitmap.bytes_per_pixel;
 
-                Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
-                Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
+                // TODO: one_past_last_slash needs a better backup solution if GetModuleFileNameA fails
+                char *one_past_last_slash = exe_filename;
+                for (char *scan = exe_filename; *scan; scan++) {
+                    if (*scan == '\\') {
+                        one_past_last_slash = scan + 1;
+                    }
+                }
+
+                char source_dll_name[] = "sandbox.dll";
+                size_t source_dll_name_length_without_null_terminator = sizeof(source_dll_name) - 1;
+                char source_dll_full_path[MAX_PATH];
+                size_t current_path_length = one_past_last_slash - exe_filename;
+                Concatenate_strings(current_path_length, exe_filename,
+                                    source_dll_name_length_without_null_terminator, source_dll_name,
+                                    sizeof(source_dll_full_path), source_dll_full_path);
+
+
+                while (g_running) {
+                    MSG message;
+                    while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+                        if (message.message == WM_QUIT) {
+                            g_running = false;
+                        }
+
+                        TranslateMessage(&message);
+                        DispatchMessageA(&message);
+                    }
+                    
+                    Game_Bitmap bitmap = {};
+                    bitmap.memory          = g_bitmap.memory;
+                    bitmap.width           = g_bitmap.width;
+                    bitmap.height          = g_bitmap.height;
+                    bitmap.pitch           = g_bitmap.pitch;
+                    bitmap.bytes_per_pixel = g_bitmap.bytes_per_pixel;
+
+                    Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
+                    Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
+                }
             }
         } else {
             // Error Logging
