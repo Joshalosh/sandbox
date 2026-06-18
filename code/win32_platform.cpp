@@ -174,6 +174,19 @@ INTERNAL void Win32UnloadGameCode(Win32_Game_Code *game_code) {
     game_code->update_and_render = 0;
 }
 
+INTERNAL void Concatenate_strings(size_t source_a_count, char *source_a,
+                                  size_t source_b_count, char *source_b,
+                                  size_t dest_count, char *dest) {
+    ASSERT(source_a_count + source_b_count < dest_count);
+    for (S32 index = 0; index < source_a_count; index++) {
+        *dest++ = *source_a++;
+    }
+    for (S32 index = 0; index < source_b_count; index++) {
+        *dest++ = *source_b++;
+    }
+    *dest = 0;
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
