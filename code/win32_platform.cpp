@@ -5,6 +5,8 @@
 #include "staples.h"
 #include "sandbox.h"
 
+#include "win32_platform.h"
+
 GLOBAL bool         g_running;
 GLOBAL Win32_Bitmap g_bitmap;
 
@@ -44,7 +46,7 @@ LRESULT CALLBACK Win32MainWindowCallback(HWND window, UINT message, WPARAM w_par
     return result;
 }
 
-INTERNAL Win32ResizeDIBSection(Win32_Bitmap *bitmap, int width, int height) {
+INTERNAL void Win32ResizeDIBSection(Win32_Bitmap *bitmap, int width, int height) {
     // Win32 takes LONG for its width and height which is int32 
     // just to make operations easy I should keep things in this functions to 
     // S32 so everything plays nice with the required ints for the API
@@ -174,14 +176,14 @@ INTERNAL void Win32UnloadGameCode(Win32_Game_Code *game_code) {
     game_code->update_and_render = 0;
 }
 
-INTERNAL void Concatenate_strings(size_t source_a_count, char *source_a,
-                                  size_t source_b_count, char *source_b,
-                                  size_t dest_count, char *dest) {
-    ASSERT(source_a_count + source_b_count < dest_count);
-    for (S32 index = 0; index < source_a_count; index++) {
+INTERNAL void ConcatenateStrings(size_t source_a_length, char *source_a,
+                                  size_t source_b_length, char *source_b,
+                                  size_t dest_length, char *dest) {
+    ASSERT(source_a_length + source_b_length < dest_length);
+    for (S32 index = 0; index < source_a_length; index++) {
         *dest++ = *source_a++;
     }
-    for (S32 index = 0; index < source_b_count; index++) {
+    for (S32 index = 0; index < source_b_length; index++) {
         *dest++ = *source_b++;
     }
     *dest = 0;
@@ -190,11 +192,11 @@ INTERNAL void Concatenate_strings(size_t source_a_count, char *source_a,
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
-    window_class.lpfWndProc    = Win32MainWindowCallback;
+    window_class.lpfnWndProc    = Win32MainWindowCallback;
     window_class.hInstance     = instance;
     window_class.lpszClassName = "SandboxWindowClass";
 
-    Win32ResizeDIBSection(&g_bitmap, 1280, 720
+    Win32ResizeDIBSection(&g_bitmap, 1280, 720);
 
     if (RegisterClass(&window_class)) {
         HWND window = CreateWindowEx(0, window_class.lpszClassName, "Sandbox",
@@ -213,7 +215,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
             game_memory.persisting_storage_size      = MEGABYTES(64);
             game_memory.temporary_storage_size       = GIGABYTES(4);
             game_memory.DEBUGPlatformFreeFileMemory  = DEBUGPlatformFreeFileMemory;
-            game_memory.DEBUGPlatformReadEntireFile  = DEBUGplatformReadEntireFile;
+            game_memory.DEBUGPlatformReadEntireFile  = DEBUGPlatformReadEntireFile;
             game_memory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
 
             U64 total_memory_size = game_memory.persisting_storage_size + 
@@ -244,12 +246,29 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                 size_t source_dll_name_length_without_null_terminator = sizeof(source_dll_name) - 1;
                 char source_dll_full_path[MAX_PATH];
                 size_t current_path_length = one_past_last_slash - exe_filename;
-                Concatenate_strings(current_path_length, exe_filename,
+                ConcatenateStrings(current_path_length, exe_filename,
                                     source_dll_name_length_without_null_terminator, source_dll_name,
                                     sizeof(source_dll_full_path), source_dll_full_path);
 
+                char temp_dll_name[] = "sandbox_temp.dll";
+                size_t temp_dll_name_length_without_null_terminator = sizeof(source_dll_name) - 1;
+                char temp_dll_full_path[MAX_PATH];
+                ConcatenateStrings(current_path_length, exe_filename, 
+                                   temp_dll_name_length_without_null_terminator, temp_dll_name,
+                                   sizeof(temp_dll_full_path), temp_dll_full_path);
+
+                Win32_Game_Code game = Win32LoadGameCode(source_dll_full_path, temp_dll_full_path);
 
                 while (g_running) {
+                    FILETIME new_dll_write_time = Win32GetLastWriteTime(source_dll_full_path);
+                    if (CompareFileTime(&new_dll_write_time, &game.last_dll_write_time) != 0) {
+                        Win32UnloadGameCode(&game);
+                        for (U32 load_tries = 0; !game.is_valid && (load_tries < 100); load_tries++) {
+                            game = Win32LoadGameCode(source_dll_full_path, temp_dll_full_path);
+                            Sleep(100);
+                        }
+                    }
+
                     MSG message;
                     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
                         if (message.message == WM_QUIT) {
@@ -277,5 +296,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
     } else {
         // Error logging
     }
+    return 0;
 }
 

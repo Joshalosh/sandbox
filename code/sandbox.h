@@ -18,14 +18,18 @@ typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(Debug_Platform_Write_Entire_File);
 
 struct Game_Bitmap {
     void *memory;
-    int   widht;
+    int   width;
     int   height;
     int   pitch;
     int   bytes_per_pixel;
 };
 
+struct Game_State {
+    U32 *pixel_ptr;
+};
+
 struct Game_Memory {
-    B32   is_initialsed;
+    B32   is_initialised;
     U64   persisting_storage_size;
     void *persisting_storage; // This needs to be cleared to zero at startup
     U64   temporary_storage_size;
@@ -37,4 +41,4 @@ struct Game_Memory {
 };
 
 #define GAME_UPDATE_AND_RENDER(name) void name(Game_Memory *memory, Game_Bitmap *bitmap)
-typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render)
+typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render);
