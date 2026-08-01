@@ -24,8 +24,8 @@ typedef double   R64;
 #define GIGABYTES(value) (MEGABYTES(value)*1024LL)
 #define TERABYTES(value) (GIGABYTES(value)*1024LL)
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ?  (a) : (b))
+#define MAX(a, b) ((a) > (b) ?  (a) : (b))
 #define ABS(a)    ((a) < (0) ? -(a) : (a))
 
 #if DEBUG
@@ -39,3 +39,20 @@ INTERNAL U32 SafeU64ToU32(U64 input) {
     U32 result = (U32)input;
     return result;
 }
+
+union V2 {
+    struct {R32 x, y;};
+    struct {R32 u, v;};
+    R32 e[2];
+};
+
+union V3 {
+    struct {R32 x, y, z;};
+    struct {R32 u, v, w;};
+    struct {R32 r, g, b;};
+    struct {V2 xy, R32 ignored0_;};
+    struct {R32 ingored1_; V2 yz;};
+    struct {V2 uv, R32 ignored2_;};
+    struct {R32 ingored3_; V2 vw;};
+    R32 e[3];
+};
