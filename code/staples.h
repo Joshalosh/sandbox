@@ -50,9 +50,9 @@ union V3 {
     struct {R32 x, y, z;};
     struct {R32 u, v, w;};
     struct {R32 r, g, b;};
-    struct {V2 xy, R32 ignored0_;};
+    struct {V2 xy; R32 ignored0_;};
     struct {R32 ingored1_; V2 yz;};
-    struct {V2 uv, R32 ignored2_;};
+    struct {V2 uv; R32 ignored2_;};
     struct {R32 ingored3_; V2 vw;};
     R32 e[3];
 };

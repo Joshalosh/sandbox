@@ -251,7 +251,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                                     sizeof(source_dll_full_path), source_dll_full_path);
 
                 char temp_dll_name[] = "sandbox_temp.dll";
-                size_t temp_dll_name_length_without_null_terminator = sizeof(source_dll_name) - 1;
+                size_t temp_dll_name_length_without_null_terminator = sizeof(temp_dll_name) - 1;
                 char temp_dll_full_path[MAX_PATH];
                 ConcatenateStrings(current_path_length, exe_filename, 
                                    temp_dll_name_length_without_null_terminator, temp_dll_name,
@@ -285,6 +285,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                     bitmap.height          = g_bitmap.height;
                     bitmap.pitch           = g_bitmap.pitch;
                     bitmap.bytes_per_pixel = g_bitmap.bytes_per_pixel;
+
+                    if (game.update_and_render) {
+                        game.update_and_render(&game_memory, &bitmap);
+                    }
 
                     Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
                     Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
