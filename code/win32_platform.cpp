@@ -7,8 +7,9 @@
 
 #include "win32_platform.h"
 
-GLOBAL bool         g_running;
-GLOBAL Win32_Bitmap g_bitmap;
+GLOBAL bool          g_running;
+GLOBAL Win32_Bitmap  g_bitmap;
+GLOBAL S64           g_tick_frequency;
 
 INTERNAL Win32_Window_Dimension Win32GetWindowDimension(HWND window) {
     Win32_Window_Dimension result;
@@ -189,6 +190,19 @@ INTERNAL void ConcatenateStrings(size_t source_a_length, char *source_a,
     *dest = 0;
 }
 
+INTERNAL LARGE_INTEGER Win32GetTickCount() {
+    LARGE_INTEGER result;
+    QueryPerformanceCounter(&result);
+    return result;
+}
+
+R32 Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end) {
+    ASSERT(g_tick_frequency > 0);
+    ASSERT(start.QuadPart >= end.QuadPart);
+    R32 result = (R32)(end.QuadPart - start.QuadPart) / g_tick_frequency;
+    return result;
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_line, int show_command_line) {
     WNDCLASS window_class      = {};
     window_class.style         = CS_HREDRAW|CS_VREDRAW|CS_OWNDC;
@@ -197,6 +211,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
     window_class.lpszClassName = "SandboxWindowClass";
 
     Win32ResizeDIBSection(&g_bitmap, 1280, 720);
+
+    LARGE_INTEGER tick_frequency;
+    QueryPerformanceFrequency(&tick_frequency);
+    g_tick_frequency = tick_frequency.QuadPart;
+
+    R32 target_seconds_per_frame = 1.0f/60.0f;
+    // Have to set the millisecond count of the schedular to be more granular
+    // so that it checks to make sure it wakes up from sleep before the frame ends
+    int desired_schedular_ms = 1;
+    timeBeginPeriod(desired_schedular_ms);
 
     if (RegisterClass(&window_class)) {
         HWND window = CreateWindowEx(0, window_class.lpszClassName, "Sandbox",
@@ -259,6 +283,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
 
                 Win32_Game_Code game = Win32LoadGameCode(source_dll_full_path, temp_dll_full_path);
 
+                LARGE_INTEGER begin_frame_count = Win32GetTickCount();
+
                 while (g_running) {
                     FILETIME new_dll_write_time = Win32GetLastWriteTime(source_dll_full_path);
                     if (CompareFileTime(&new_dll_write_time, &game.last_dll_write_time) != 0) {
@@ -292,6 +318,26 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
 
                     Win32_Window_Dimension dimension = Win32GetWindowDimension(window);
                     Win32CopyBitmapToWindow(device_context, g_bitmap, dimension.width, dimension.height);
+
+                    LARGE_INTEGER work_count = Win32GetTickCount();
+                    R32 work_seconds = Win32GetSecondsElapsed(begin_frame_count, work_count);
+
+                    R32 frame_seconds_elapsed = work_seconds;
+                    if (frame_seconds_elapsed < target_seconds_per_frame) {
+                        // TODO: finish this 
+                        S32 ms_to_sleep = (1000.0f*(target_seconds_per_frame - frame_seconds_elapsed) - 1.0f);
+                        if (ms_to_sleep > 0) {
+                            Sleep((DWORD)ms_to_sleep);
+                        }
+                        while (frame_seconds_elapsed < target_seconds_per_frame) {
+                            frame_seconds_elapsed = Win32GetSecondsElapsed(begin_frame_count, Win32GetTickCount);
+                        }
+                    } else {
+                        // LOG: Missed frame or sumfin
+                    }
+
+                    LARGE_INTEGER end_frame_count = Win32GetTickCount();
+                    begin_frame_count = end_frame_count;
                 }
             }
         } else {
