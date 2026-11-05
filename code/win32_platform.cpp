@@ -196,9 +196,9 @@ INTERNAL LARGE_INTEGER Win32GetTickCount() {
     return result;
 }
 
-R32 Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end) {
+INTERNAL R32 Win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end) {
     ASSERT(g_tick_frequency > 0);
-    ASSERT(start.QuadPart >= end.QuadPart);
+    ASSERT(end.QuadPart >= start.QuadPart);
     R32 result = (R32)(end.QuadPart - start.QuadPart) / g_tick_frequency;
     return result;
 }
@@ -325,12 +325,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR command_
                     R32 frame_seconds_elapsed = work_seconds;
                     if (frame_seconds_elapsed < target_seconds_per_frame) {
                         // TODO: finish this 
-                        S32 ms_to_sleep = (1000.0f*(target_seconds_per_frame - frame_seconds_elapsed) - 1.0f);
+                        S32 ms_to_sleep = (S32)(1000.0f*(target_seconds_per_frame - frame_seconds_elapsed) - 1.0f);
                         if (ms_to_sleep > 0) {
                             Sleep((DWORD)ms_to_sleep);
                         }
                         while (frame_seconds_elapsed < target_seconds_per_frame) {
-                            frame_seconds_elapsed = Win32GetSecondsElapsed(begin_frame_count, Win32GetTickCount);
+                            frame_seconds_elapsed = Win32GetSecondsElapsed(begin_frame_count, Win32GetTickCount());
                         }
                     } else {
                         // LOG: Missed frame or sumfin

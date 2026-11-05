@@ -29,6 +29,9 @@ INTERNAL void DrawRect(Game_Bitmap *bitmap, V2 min, V2 max, U32 col) {
     }
 }
 
+V2 min = {250, 260};
+V2 max = {min.x + 30, min.y + 30};
+
 // It's hidden but this function takes the parameters 
 // Game_Memory *memory and Game_Bitmap *bitmap
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
@@ -36,9 +39,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     if (!memory->is_initialised) {
         memory->is_initialised = true;
     }
+    V2 screen_min = {0, 0};
+    V2 screen_max = {(R32)bitmap->width, (R32)bitmap->height};
 
-    V2 min = {250, 260};
-    V2 max = {260, 270};
+    DrawRect(bitmap, screen_min, screen_max, 0);
+
+    min.x += 10;
+    max.x += 10;
+
     U32 white = 0xFFFFFFFF;
-    DrawRect(bitmap, V2{250.0f, 260.0f}, V2{280.0f, 290.0f}, white);
+    DrawRect(bitmap, min, max, white);
 }
